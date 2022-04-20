@@ -11,7 +11,7 @@
             "orcid": "0000-0002-8349-6798"
         }
     ],
-    "description": "fhir-marshal is a lightweight service for FHIR Resource Validation with profile whitelisting and terminology server connection.",
+    "description": "fhir-marshal is a lightweight service for FHIR Resource Validation with profile allowlisting and terminology server connection.",
     "keywords": [
         "FHIR",
         "Validation"        
