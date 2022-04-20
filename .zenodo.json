@@ -1,0 +1,22 @@
+{
+    "creators": [
+        {
+            "affiliation": "University of Lübeck, Lübeck",
+            "name": "Wiedekopf, Joshua",
+            "orcid": "0000-0002-9902-6459"
+        },
+        {
+            "affiliation": "University of Lübeck, Lübeck",
+            "name": "Ulrich, Hannes",
+            "orcid": "0000-0002-8349-6798"
+        }
+    ],
+    "description": "fhir-marshal is a lightweight service for FHIR Resource Validation with profile whitelisting and terminology server connection.",
+    "keywords": [
+        "FHIR",
+        "Validation"        
+    ],
+    "license": "AGPL-2.0",
+    "title": "fhir-marshal",
+    "upload_type": "software"
+}
