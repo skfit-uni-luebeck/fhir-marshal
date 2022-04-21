@@ -42,6 +42,7 @@ dependencies {
     implementation("ca.uhn.hapi.fhir:hapi-fhir-structures-r4:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation-resources-r4:$hapiVersion")
+    implementation("ca.uhn.hapi.fhir:hapi-fhir-client:$hapiVersion")
 }
 
 tasks.withType<KotlinCompile> {

@@ -2,6 +2,7 @@ package de.uksh.medic.fhirmarshal.controller
 
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.parser.DataFormatException
+import ca.uhn.fhir.parser.IParser
 import de.uksh.medic.fhirmarshal.services.ValidationService
 import org.hl7.fhir.instance.model.api.IBaseResource
 import org.hl7.fhir.r4.model.CodeSystem
@@ -9,11 +10,17 @@ import org.hl7.fhir.r4.model.OperationOutcome
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.server.ResponseStatusException
+
+
+
 
 private val logger: Logger = LoggerFactory.getLogger(ValidationController::class.java)
 
@@ -24,9 +31,10 @@ class ValidationController(
     @Autowired val fhirContext: FhirContext
 ) {
 
+    var parser = fhirContext.newJsonParser()
+
     @GetMapping
     fun getValidation(): OperationOutcome {
-        // TODO: 20/04/22
         val resource = CodeSystem()
         return validationService.validateResource(resource)
     }
@@ -36,12 +44,17 @@ class ValidationController(
      * This also receives NDJSON, this might be more suited to batch validation with separate routes
      */
     @PostMapping(consumes = ["application/json", "application/fhir+json", "application/xml", "application/fhir+xml", "application/fhir+ndjson", "application/ndjson"])
-    fun postValidation(
-        requestEntity: RequestEntity<String>
-    ) {
-        logger.debug(requestEntity.toString())
+    @ResponseBody
+    fun postValidation(requestEntity: RequestEntity<String>): String {
         val iBaseResource = consumeTextBody(requestEntity)
-        // TODO: 20/04/22
+        if (iBaseResource != null) {
+            val out = validationService.validateResource(iBaseResource)
+            return parser.encodeResourceToString(out)
+        } else {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "No parser was able to handle resource; the HTTP headers were: ${requestEntity.headers}"
+            )
+        }
     }
 
     fun consumeTextBody(requestEntity: RequestEntity<String>): IBaseResource? {
