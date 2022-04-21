@@ -3,10 +3,7 @@ package de.uksh.medic.fhirmarshal.services
 import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import de.uksh.medic.fhirmarshal.AppProperties
-import org.hl7.fhir.common.hapi.validation.support.PrePopulatedValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.RemoteTerminologyServiceValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.SnapshotGeneratingValidationSupport
-import org.hl7.fhir.common.hapi.validation.support.ValidationSupportChain
+import org.hl7.fhir.common.hapi.validation.support.*
 import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.StructureDefinition
@@ -18,6 +15,8 @@ class ValidationSupportConfiguration(@Autowired private val fhirContext: FhirCon
 
    fun configureChain() = ValidationSupportChain().apply {
        this.addValidationSupport(DefaultProfileValidationSupport(this@ValidationSupportConfiguration.fhirContext))
+       this.addValidationSupport(CommonCodeSystemsTerminologyService(this@ValidationSupportConfiguration.fhirContext))
+       this.addValidationSupport(InMemoryTerminologyServerValidationSupport(this@ValidationSupportConfiguration.fhirContext))
        this.addValidationSupport(RemoteTerminologyServiceValidationSupport(this@ValidationSupportConfiguration.fhirContext, properties.remoteTerminologyServer))
        this.addValidationSupport(SnapshotGeneratingValidationSupport(this@ValidationSupportConfiguration.fhirContext))
 
