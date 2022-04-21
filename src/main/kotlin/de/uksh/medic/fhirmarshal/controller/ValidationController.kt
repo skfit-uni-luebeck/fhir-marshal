@@ -49,7 +49,7 @@ class ValidationController(
         val iBaseResource = consumeTextBody(requestEntity)
         if (iBaseResource != null) {
             val out = validationService.validateResource(iBaseResource)
-            return parser.encodeResourceToString(out)
+            return parser.setPrettyPrint(true).encodeResourceToString(out)
         } else {
             throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST, "No parser was able to handle resource; the HTTP headers were: ${requestEntity.headers}"
