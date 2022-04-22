@@ -6,7 +6,7 @@ The Marshal is based on Spring Boot and can validate against the FHIR base profi
 
 ### Configuration.
 To connect to the external server, the base URL needs to be added to the [application.yml](https://github.com/itcr-uni-luebeck/fhir-marshal/blob/main/src/main/resources/application.yml).
-```json
+```yaml
 fhir:
   remote-structure-server: "https://fhir.itcr.uni-luebeck.de/fhir/"
   remote-terminology-server: "https://terminology.itcr.uni-luebeck.de/fhir/"
