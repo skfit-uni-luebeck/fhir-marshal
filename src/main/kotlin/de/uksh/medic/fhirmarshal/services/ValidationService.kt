@@ -22,5 +22,4 @@ class ValidationService(val fhirValidator: FhirValidator) {
     fun validateResource(resource: IBaseResource) : OperationOutcome {
         return fhirValidator.validateWithResult(resource).toOperationOutcome() as OperationOutcome
     }
-
 }

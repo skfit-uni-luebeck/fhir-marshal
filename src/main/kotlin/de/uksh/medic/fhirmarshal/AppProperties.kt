@@ -1,15 +1,11 @@
 package de.uksh.medic.fhirmarshal
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConstructorBinding
 
-@ConfigurationProperties("fhir")
-@Configuration
-@EnableConfigurationProperties
-class AppProperties {
-
-    var remoteStructureServer: String? = null
-    var remoteTerminologyServer: String? = null
-
-}
+@ConfigurationProperties(prefix = "fhir")
+@ConstructorBinding
+data class AppProperties(
+    val remoteStructureServer: String,
+    val remoteTerminologyServer: String
+)

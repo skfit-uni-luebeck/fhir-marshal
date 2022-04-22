@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.server.ResponseStatusException
 
-
-
-
 private val logger: Logger = LoggerFactory.getLogger(ValidationController::class.java)
 
 @RequestMapping("/validate")
@@ -30,9 +27,6 @@ class ValidationController(
     @Autowired val validationService: ValidationService,
     @Autowired val fhirContext: FhirContext
 ) {
-
-    var parser = fhirContext.newJsonParser()
-
     @GetMapping
     fun getValidation(): OperationOutcome {
         val resource = CodeSystem()
@@ -46,18 +40,20 @@ class ValidationController(
     @PostMapping(consumes = ["application/json", "application/fhir+json", "application/xml", "application/fhir+xml", "application/fhir+ndjson", "application/ndjson"])
     @ResponseBody
     fun postValidation(requestEntity: RequestEntity<String>): String {
-        val iBaseResource = consumeTextBody(requestEntity)
-        if (iBaseResource != null) {
+        val (iBaseResource, parser) = consumeTextBody(requestEntity) ?: (null to null)
+        if (iBaseResource != null && parser != null) {
+            logger.info("${iBaseResource.fhirType()} from ${requestEntity.headers}")
             val out = validationService.validateResource(iBaseResource)
-            return parser.encodeResourceToString(out)
+            return parser.setPrettyPrint(true).encodeResourceToString(out)
         } else {
             throw ResponseStatusException(
-                HttpStatus.BAD_REQUEST, "No parser was able to handle resource; the HTTP headers were: ${requestEntity.headers}"
+                HttpStatus.BAD_REQUEST,
+                "No parser was able to handle resource; the HTTP headers were: ${requestEntity.headers}"
             )
         }
     }
 
-    fun consumeTextBody(requestEntity: RequestEntity<String>): IBaseResource? {
+    fun consumeTextBody(requestEntity: RequestEntity<String>): Pair<IBaseResource, IParser>? {
         val parsers = listOf(
             fhirContext.newJsonParser() to "json",
             fhirContext.newXmlParser() to "xml",
@@ -65,7 +61,7 @@ class ValidationController(
         )
         for ((parser, parserFormat) in parsers) {
             try {
-                return parser.parseResource(requestEntity.body)
+                return parser.parseResource(requestEntity.body) to parser
             } catch (e: DataFormatException) {
                 logger.debug("Data is not in $parserFormat")
             }
