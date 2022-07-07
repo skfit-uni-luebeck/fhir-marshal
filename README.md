@@ -3,6 +3,36 @@
 The FHIR-Marshal is a light-weight and easy-to-configure validation service for HL7© FHIR Resources.
 The Marshal is based on Spring Boot and can validate against the FHIR base profiles and can query custom profiles from a FHIR Server. In addition, a Terminology server can be connected to validate used codes.
 
+### Exemplary deployment
+
+A deployment of FHIR-Marshal might look like this:
+
+```
+                                                                                ┌──────────────┐
+                                                   ┌─────────────────┐          │ FHIR Marshal ├─────┐
+                                                   │ validation      │  ┌──────►│              │     │
+                                  ┌───────────────►│ result store    │  │       └──────────────┘     │
+                                  │                │ (e.g. logstash) │  │                            │
+                                  │                └─────────────────┘  │       ┌──────────────┐     │   ┌──────────────────────┐
+                                  │                                     ├──────►│ FHIR Marshal ├─────┼──►│ Structure Server     │
+┌─────────────────┐       ┌───────┴─────────┐      ┌─────────────────┐  │       │              │     │   │ profile allowlisting │
+│ source system   │       │     Plumbing    │      │ Load balancer   ├──┤       └──────────────┘     │   └──────────────────────┘
+│ (speaking FHIR) ├──────►│ (forward CRUD,  ├─────►│ (e.g. nginx)    │  │                            │
+└─────────────────┘       │  validate some) │      └─────────────────┘  │       ┌──────────────┐     │
+                          └────────┬────────┘                           ├──────►│ FHIR Marshal │     │
+                                   │                                    │       │              ├─────┤   ┌──────────────────────┐
+                                   │                                    │       └──────────────┘     ├──►│ Terminology server   │
+                                   │                                    │                            │   │ supports validator   │
+                                   │                                    │       ┌──────────────┐     │   └──────────────────────┘
+                                   │                                    └──────►│ FHIR Marshal │     │
+                                   │                                            │              ├─────┘
+                                   │               ┌─────────────┐              └──────────────┘
+                                   │               │ target FHIR │
+                                   └──────────────►│ server      │
+                                                   └─────────────┘
+```                                                   
+
+Plumbing the validation into your overall infrastructure is your own responsibility.
 
 ### Configuration.
 To connect to the external server, the base URL needs to be added to the [application.yml](https://github.com/itcr-uni-luebeck/fhir-marshal/blob/main/src/main/resources/application.yml):
