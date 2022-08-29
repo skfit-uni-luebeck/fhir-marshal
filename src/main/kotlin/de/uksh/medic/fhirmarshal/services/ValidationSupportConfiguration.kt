@@ -4,7 +4,6 @@ import ca.uhn.fhir.context.FhirContext
 import ca.uhn.fhir.context.support.DefaultProfileValidationSupport
 import de.uksh.medic.fhirmarshal.AppProperties
 import org.hl7.fhir.common.hapi.validation.support.*
-import org.hl7.fhir.instance.model.api.IBaseBundle
 import org.hl7.fhir.r4.model.Bundle
 import org.hl7.fhir.r4.model.CapabilityStatement
 import org.hl7.fhir.r4.model.StructureDefinition
@@ -12,6 +11,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import org.springframework.web.client.RestTemplate
+import org.springframework.web.util.UriComponentsBuilder
+import java.net.URI
 
 private val logger: Logger = LoggerFactory.getLogger(ValidationSupportConfiguration::class.java)
 
@@ -33,7 +35,7 @@ class ValidationSupportConfiguration(
         this.addValidationSupport(
             RemoteTerminologyServiceValidationSupport(
                 this@ValidationSupportConfiguration.fhirContext,
-                properties.remoteTerminologyServer
+                properties.remoteTerminologyServer.toString()
             )
         )
         this.addValidationSupport(SnapshotGeneratingValidationSupport(this@ValidationSupportConfiguration.fhirContext))
@@ -41,35 +43,57 @@ class ValidationSupportConfiguration(
             PrePopulatedValidationSupport(this@ValidationSupportConfiguration.fhirContext)
         retrieveStructureDefinitions().forEach {
             prePopulatedValidationSupport.addStructureDefinition(it)
+            /* TODO: 2022-08-29 [JW] We are currently keeping all the StructureDefinions in-memory.
+                Maybe externalize to a temp directory?
+                This would require a custom implementation of IValidationSupport that uses Files.createTempDirectory
+             */
         }
         this.addValidationSupport(prePopulatedValidationSupport)
     }.let { chain ->
-        CachingValidationSupport(chain, CachingValidationSupport.CacheTimeouts.defaultValues().apply {
-            // TODO: 21/04/22 [JW] maybe tweak the timeout millis here
-        })
+        CachingValidationSupport(chain)
     }
 
-    private fun validateServerIsFhir(serverUrl: String, role: String) {
-        val client = fhirContext.newRestfulGenericClient(serverUrl)
+    private fun validateServerIsFhir(serverUrl: URI, role: String) {
+        val client = fhirContext.newRestfulGenericClient(serverUrl.toString())
         try {
             val capabilities = client.capabilities().ofType(CapabilityStatement::class.java).execute()
-            logger.info("Connected to $serverUrl; FHIR ${capabilities.fhirVersion}; Software ${capabilities.software.name} - ${capabilities.software.version}")
+            logger.info("Connected to $serverUrl; FHIR ${capabilities.fhirVersion}; Software '${capabilities.software.name} - ${capabilities.software.version}'")
         } catch (e: Exception) {
             throw ConfigurationError("could not connect to $role at $serverUrl", e)
         }
     }
 
+    /**
+     * we are not using the HAPI FHIR client, since Firely Server handles paging differently to HAPI FHIR.
+     * By following the urls manually, and parsing using JsonParser, this code works on HAPI-FHIR-JPA and Firely Server.
+     */
     private fun retrieveStructureDefinitions(): List<StructureDefinition> {
-        val client = fhirContext.newRestfulGenericClient(properties.remoteStructureServer)
+        val structureDefinitions = mutableListOf<StructureDefinition>()
+        val startUri = UriComponentsBuilder.fromUri(properties.remoteStructureServer).apply {
+            pathSegment("StructureDefinition")
+            queryParam("_count", properties.retrievalPageSize)
+            queryParam("_total", "accurate") // this might be ignored by some servers
+            queryParam("status", "active")
+        }.build().toUri()
+        logger.info("Starting StructureDefinition retrieval (page size=${properties.retrievalPageSize}) at: $startUri")
+        var currentUri: URI? = startUri
+        val template = RestTemplate()
+        var pageCount = 0
+        while (currentUri != null) {
+            val result = template.getForEntity(currentUri, String::class.java).let { entity ->
+                fhirContext.newJsonParser().parseResource(Bundle::class.java, entity.body)
+            }
+            logger.info("Retrieved page ${++pageCount} of StructureDefinitions with ${result.entry.size} entries from $currentUri")
+            if (pageCount == 0) logger.info("Server reported total=${result.total}")
+            structureDefinitions.addAll(result.entry.mapNotNull { it.resource as? StructureDefinition })
+            currentUri = result.getLink("next")?.let { nextLink ->
+                URI.create(nextLink.url)
+            } ?: null.also {
+                logger.debug("Finished bundle retrieval from ${properties.remoteStructureServer}")
+            }
+        }
 
-        val result: Bundle = client
-            .search<IBaseBundle>()
-            .forResource(StructureDefinition::class.java)
-            .where(StructureDefinition.STATUS.exactly().code("active"))
-            .returnBundle<Bundle>(Bundle::class.java)
-            .execute()
-
-        return result.entry.map { it.resource as StructureDefinition }.toMutableList()
+        return structureDefinitions
     }
 }
 

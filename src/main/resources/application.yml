@@ -1,4 +1,4 @@
 fhir:
   remote-structure-server: "https://fhir.imi.uni-luebeck.de/fhir/"
   remote-terminology-server: "https://ontoserver.imi.uni-luebeck.de/fhir/"
-
+  retrieval-page-size: 100
