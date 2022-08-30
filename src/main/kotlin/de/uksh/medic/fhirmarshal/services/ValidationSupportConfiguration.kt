@@ -83,7 +83,7 @@ class ValidationSupportConfiguration(
             val result = template.getForEntity(currentUri, String::class.java).let { entity ->
                 fhirContext.newJsonParser().parseResource(Bundle::class.java, entity.body)
             }
-            logger.info("Retrieved page ${++pageCount} of StructureDefinitions with ${result.entry.size} entries from $currentUri")
+            logger.debug("Retrieved page ${++pageCount} of StructureDefinitions with ${result.entry.size} entries from $currentUri")
             if (pageCount == 0) logger.info("Server reported total=${result.total}")
             structureDefinitions.addAll(result.entry.mapNotNull { it.resource as? StructureDefinition })
             currentUri = result.getLink("next")?.let { nextLink ->
