@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    val hapiVersion = "5.7.2"
+    val hapiVersion = "6.1.0"
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-batch")
     implementation("org.springframework.boot:spring-boot-starter-mail")
@@ -42,6 +42,7 @@ dependencies {
     implementation("ca.uhn.hapi.fhir:hapi-fhir-base:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-structures-r4:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation:$hapiVersion")
+    implementation("org.apache.commons:commons-compress:1.21")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation-resources-r4:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-client:$hapiVersion")
 }

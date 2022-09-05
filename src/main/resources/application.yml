@@ -1,4 +1,17 @@
 fhir:
-  remote-structure-server: "https://fhir.imi.uni-luebeck.de/fhir/"
-  remote-terminology-server: "https://ontoserver.imi.uni-luebeck.de/fhir/"
+  remote-structure-servers:
+    structure01:
+      url: "https://term01.itcr.uni-luebeck.de/fhir"
+    structure02:
+      url: "https://structure02.itcr.uni-luebeck.de/fhir"
+      auth-user: "username"
+      auth-password: "password"
+      override-page-size: 42
 
+  remote-terminology-servers:
+    term01:
+      url: "https://term01.itcr.uni-luebeck.de/fhir"
+    term02:
+      url: "https://term02.itcr.uni-luebeck.de/fhir"
+
+  retrieval-page-size: 100

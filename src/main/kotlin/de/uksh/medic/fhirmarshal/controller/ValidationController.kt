@@ -5,15 +5,12 @@ import ca.uhn.fhir.parser.DataFormatException
 import ca.uhn.fhir.parser.IParser
 import de.uksh.medic.fhirmarshal.services.ValidationService
 import org.hl7.fhir.instance.model.api.IBaseResource
-import org.hl7.fhir.r4.model.CodeSystem
-import org.hl7.fhir.r4.model.OperationOutcome
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Controller
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
@@ -27,11 +24,6 @@ class ValidationController(
     @Autowired val validationService: ValidationService,
     @Autowired val fhirContext: FhirContext
 ) {
-    @GetMapping
-    fun getValidation(): OperationOutcome {
-        val resource = CodeSystem()
-        return validationService.validateResource(resource)
-    }
 
     /**
      * receives a message entity and carries out validation, the main entry point for the HTTP API
