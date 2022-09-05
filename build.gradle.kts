@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "de.uksh.medic"
-version = "0.0.1"
+version = "1.0.0"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 configurations {
@@ -39,6 +39,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.batch:spring-batch-test")
     runtimeOnly("com.h2database:h2")
+    implementation("org.apache.commons:commons-compress:1.21")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-base:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-structures-r4:$hapiVersion")
     implementation("ca.uhn.hapi.fhir:hapi-fhir-validation:$hapiVersion")
