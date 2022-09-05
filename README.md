@@ -39,8 +39,18 @@ To connect to the external server, the base URL needs to be added to the [applic
 
 ```yaml
 fhir:
-  remote-structure-server: "https://fhir.itcr.uni-luebeck.de/fhir/"
-  remote-terminology-server: "https://terminology.itcr.uni-luebeck.de/fhir/"
+  remote-structure-servers: 
+    structure01:
+      url: "https://fhir.itcr.uni-luebeck.de/fhir/"
+    structure02:
+      url: "https://other-fhir.itcr.uni-luebeck.de/fhir"
+      override-page-size: 25
+      auth-user: "username"
+      auth-password: "password"
+      
+  remote-terminology-servers: 
+    term01:
+      "https://terminology.itcr.uni-luebeck.de/fhir/"
 ```
 
 ### Deployment
