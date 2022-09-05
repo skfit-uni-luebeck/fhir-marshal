@@ -11,7 +11,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import org.springframework.web.client.RestTemplate
 import org.springframework.web.util.UriComponentsBuilder
 import java.net.URI
 
@@ -24,20 +23,19 @@ class ValidationSupportConfiguration(
 ) {
 
     init {
-        validateServerIsFhir(properties.remoteTerminologyServer, "terminology")
-        validateServerIsFhir(properties.remoteStructureServer, "structure")
+        validateServerIsFhir(properties.remoteTerminologyServers, "terminology")
+        validateServerIsFhir(properties.remoteStructureServers, "structure")
     }
 
     fun configureChain() = ValidationSupportChain().apply {
         this.addValidationSupport(DefaultProfileValidationSupport(this@ValidationSupportConfiguration.fhirContext))
         this.addValidationSupport(CommonCodeSystemsTerminologyService(this@ValidationSupportConfiguration.fhirContext))
         this.addValidationSupport(InMemoryTerminologyServerValidationSupport(this@ValidationSupportConfiguration.fhirContext))
-        this.addValidationSupport(
-            RemoteTerminologyServiceValidationSupport(
-                this@ValidationSupportConfiguration.fhirContext,
-                properties.remoteTerminologyServer.toString()
-            )
-        )
+        properties.remoteTerminologyServers.forEach { (name, settings) ->
+            logger.info("Added terminology support via $name at ${settings.url}")
+            this.addValidationSupport(settings.configureValidationSupport(fhirContext))
+        }
+
         this.addValidationSupport(SnapshotGeneratingValidationSupport(this@ValidationSupportConfiguration.fhirContext))
         val prePopulatedValidationSupport =
             PrePopulatedValidationSupport(this@ValidationSupportConfiguration.fhirContext)
@@ -53,46 +51,59 @@ class ValidationSupportConfiguration(
         CachingValidationSupport(chain)
     }
 
-    private fun validateServerIsFhir(serverUrl: URI, role: String) {
-        val client = fhirContext.newRestfulGenericClient(serverUrl.toString())
-        try {
-            val capabilities = client.capabilities().ofType(CapabilityStatement::class.java).execute()
-            logger.info("Connected to $serverUrl; FHIR ${capabilities.fhirVersion}; Software '${capabilities.software.name} - ${capabilities.software.version}'")
-        } catch (e: Exception) {
-            throw ConfigurationError("could not connect to $role at $serverUrl", e)
+    private fun validateServerIsFhir(servers: Map<String, AppProperties.ServerSettings>, role: String) {
+        servers.forEach { (name, settings) ->
+            val client = settings.configureHapiClient(fhirContext)
+            try {
+                val capabilities = client.capabilities().ofType(CapabilityStatement::class.java).execute()
+                logger.info("Connected to $role server '$name' at ${settings.url}; FHIR ${capabilities.fhirVersion}; Software '${capabilities.software.name} - ${capabilities.software.version}'")
+            } catch (e: Exception) {
+                throw ConfigurationError("could not connect to $role server '$name' at ${settings.url}", e)
+            }
         }
+
     }
 
     /**
      * we are not using the HAPI FHIR client, since Firely Server handles paging differently to HAPI FHIR.
      * By following the urls manually, and parsing using JsonParser, this code works on HAPI-FHIR-JPA and Firely Server.
      */
-    private fun retrieveStructureDefinitions(): List<StructureDefinition> {
+    private fun retrieveStructureDefinitions(): List<StructureDefinition> =
+        properties.remoteStructureServers.flatMap { (name, settings) ->
+            retrieveStructureDefinitions(name, settings)
+        }.also {
+            logger.info("Finished structure definition retrieval with ${it.size} structure definitions from ${properties.remoteStructureServers.size} servers")
+        }
+
+    private fun retrieveStructureDefinitions(
+        serverName: String,
+        server: AppProperties.ServerSettings
+    ): MutableList<StructureDefinition> {
         val structureDefinitions = mutableListOf<StructureDefinition>()
-        val startUri = UriComponentsBuilder.fromUri(properties.remoteStructureServer).apply {
+        val pageSize = server.overridePageSize ?: properties.retrievalPageSize
+        val startUri = UriComponentsBuilder.fromUri(server.url).apply {
             pathSegment("StructureDefinition")
-            queryParam("_count", properties.retrievalPageSize)
+            queryParam("_count", pageSize)
             queryParam("_total", "accurate") // this might be ignored by some servers
             queryParam("status", "active")
         }.build().toUri()
-        logger.info("Starting StructureDefinition retrieval (page size=${properties.retrievalPageSize}) at: $startUri")
+        logger.info("Starting StructureDefinition retrieval from $serverName (page size=$pageSize) at: $startUri")
         var currentUri: URI? = startUri
-        val template = RestTemplate()
+        val template = server.configureRestTemplate()
         var pageCount = 0
         while (currentUri != null) {
             val result = template.getForEntity(currentUri, String::class.java).let { entity ->
                 fhirContext.newJsonParser().parseResource(Bundle::class.java, entity.body)
             }
-            logger.info("Retrieved page ${++pageCount} of StructureDefinitions with ${result.entry.size} entries from $currentUri")
-            if (pageCount == 0) logger.info("Server reported total=${result.total}")
+            logger.debug("Retrieved page ${++pageCount} of StructureDefinitions with ${result.entry.size} entries from $currentUri")
+            if (pageCount == 0) logger.debug("Server reported total=${result.total}")
             structureDefinitions.addAll(result.entry.mapNotNull { it.resource as? StructureDefinition })
             currentUri = result.getLink("next")?.let { nextLink ->
                 URI.create(nextLink.url)
             } ?: null.also {
-                logger.debug("Finished bundle retrieval from ${properties.remoteStructureServer}")
+                logger.info("Finished bundle retrieval from $serverName, got ${structureDefinitions.size} resources")
             }
         }
-
         return structureDefinitions
     }
 }
