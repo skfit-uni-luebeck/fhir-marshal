@@ -14,10 +14,15 @@ import java.net.URI
 data class AppProperties(
     val remoteStructureServers: Map<String, ServerSettings>,
     val remoteTerminologyServers: Map<String, ServerSettings>,
+    val retrieveOnlyActiveProfiles: Boolean = true,
     val retrievalPageSize: Int = 3
 ) {
     data class ServerSettings(
-        val url: URI, val authUser: String? = null, val authPassword: String? = null, val overridePageSize: Int? = null
+        val url: URI,
+        val authUser: String? = null,
+        val authPassword: String? = null,
+        val overridePageSize: Int? = null,
+        val overrideRetrieveOnlyActiveProfiles: Boolean? = null
     ) {
         fun configureRestTemplate() = RestTemplate().apply {
             if (authUser != null && authPassword != null) {

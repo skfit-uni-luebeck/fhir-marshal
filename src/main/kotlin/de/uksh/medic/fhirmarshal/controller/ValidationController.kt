@@ -34,9 +34,10 @@ class ValidationController(
     fun postValidation(requestEntity: RequestEntity<String>): String {
         val (iBaseResource, parser) = consumeTextBody(requestEntity) ?: (null to null)
         if (iBaseResource != null && parser != null) {
-            logger.info("${iBaseResource.fhirType()} from ${requestEntity.headers}")
             val out = validationService.validateResource(iBaseResource)
-            return parser.setPrettyPrint(true).encodeResourceToString(out)
+            return parser.setPrettyPrint(true).encodeResourceToString(out).also {
+                logger.info("${iBaseResource.fhirType()} from ${requestEntity.headers}, validated: ${out.issue.size} issues")
+            }
         } else {
             throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST,

@@ -41,6 +41,7 @@ class ValidationSupportConfiguration(
             PrePopulatedValidationSupport(this@ValidationSupportConfiguration.fhirContext)
         retrieveStructureDefinitions().forEach {
             prePopulatedValidationSupport.addStructureDefinition(it)
+            logger.debug("Registered ${it.url}")
             /* TODO: 2022-08-29 [JW] We are currently keeping all the StructureDefinions in-memory.
                 Maybe externalize to a temp directory?
                 This would require a custom implementation of IValidationSupport that uses Files.createTempDirectory
@@ -85,7 +86,9 @@ class ValidationSupportConfiguration(
             pathSegment("StructureDefinition")
             queryParam("_count", pageSize)
             queryParam("_total", "accurate") // this might be ignored by some servers
-            queryParam("status", "active")
+            if (server.overrideRetrieveOnlyActiveProfiles ?: properties.retrieveOnlyActiveProfiles) {
+                queryParam("status", "active")
+            }
         }.build().toUri()
         logger.info("Starting StructureDefinition retrieval from $serverName (page size=$pageSize) at: $startUri")
         var currentUri: URI? = startUri
