@@ -42,6 +42,7 @@ fhir:
   remote-structure-servers: 
     structure01:
       url: "https://fhir.itcr.uni-luebeck.de/fhir/"
+      override-retrieve-only-active-profiles: false
     structure02:
       url: "https://other-fhir.itcr.uni-luebeck.de/fhir"
       override-page-size: 25
