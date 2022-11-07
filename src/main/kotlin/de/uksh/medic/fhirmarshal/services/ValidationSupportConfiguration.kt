@@ -30,7 +30,10 @@ class ValidationSupportConfiguration(
     fun configureChain() = ValidationSupportChain().apply {
         this.addValidationSupport(DefaultProfileValidationSupport(this@ValidationSupportConfiguration.fhirContext))
         this.addValidationSupport(CommonCodeSystemsTerminologyService(this@ValidationSupportConfiguration.fhirContext))
-        this.addValidationSupport(InMemoryTerminologyServerValidationSupport(this@ValidationSupportConfiguration.fhirContext))
+        /*FIXME: InMemoryTerminologyValidationSupport doesn't work well together with external TerminologyServices
+        * This is due to missing validation hierarchy: If the in-memory version is used the external one seem to be
+        * ignored*/
+        //this.addValidationSupport(InMemoryTerminologyServerValidationSupport(this@ValidationSupportConfiguration.fhirContext))
         properties.remoteTerminologyServers.forEach { (name, settings) ->
             logger.info("Added terminology support via $name at ${settings.url}")
             this.addValidationSupport(settings.configureValidationSupport(fhirContext))
