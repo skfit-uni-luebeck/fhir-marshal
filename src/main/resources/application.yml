@@ -1,17 +1,17 @@
 fhir:
   remote-structure-servers:
     hapi:
-      url: "http://localhost:8080/fhir"
+      url: "${STRUCTURE_SERVER_URL}"
       override-retrieve-only-active-profiles: false
 
   remote-terminology-servers:
     onto:
-      url: "https://ontoserver.imi.uni-luebeck.de/fhir"
+      url: "${TERMINOLOGY_SERVER_URL}"
 
   retrieval-page-size: 100
 
 server:
-  port: 8081
+  port: ${PORT}
 
 logging:
   level:
