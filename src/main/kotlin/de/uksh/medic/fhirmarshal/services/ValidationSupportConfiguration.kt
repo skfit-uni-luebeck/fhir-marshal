@@ -45,7 +45,7 @@ class ValidationSupportConfiguration(
         retrieveStructureDefinitions().forEach {
             prePopulatedValidationSupport.addStructureDefinition(it)
             logger.debug("Registered ${it.url}")
-            /* TODO: 2022-08-29 [JW] We are currently keeping all the StructureDefinions in-memory.
+            /* TODO: 2022-08-29 [JW] We are currently keeping all the StructureDefinitions in-memory.
                 Maybe externalize to a temp directory?
                 This would require a custom implementation of IValidationSupport that uses Files.createTempDirectory
              */

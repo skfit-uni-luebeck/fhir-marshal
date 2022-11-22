@@ -1,6 +1,7 @@
 package de.uksh.medic.fhirmarshal
 
 import ca.uhn.fhir.context.FhirContext
+import ca.uhn.fhir.interceptor.executor.InterceptorService
 import ca.uhn.fhir.validation.FhirValidator
 import de.uksh.medic.fhirmarshal.services.ValidationSupportConfiguration
 import org.hl7.fhir.common.hapi.validation.validator.FhirInstanceValidator
