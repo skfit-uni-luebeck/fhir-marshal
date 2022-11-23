@@ -11,7 +11,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder
 import org.apache.commons.lang3.builder.ToStringBuilder
 import org.apache.commons.lang3.builder.ToStringStyle
 import org.hl7.fhir.instance.model.api.IBaseOperationOutcome
-import org.hl7.fhir.r4.model.OperationOutcome
 
 class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<EvaluatedValidationMessage>): ValidationResult(ctx , messages) {
 
@@ -47,8 +46,8 @@ class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<Eva
                     OperationOutcomeUtil.addLocationToIssue(context, issue, "Line $line, Col $col")
                 }
             }
-            if(next is EvaluatedValidationMessage && next.locationElement.isNotEmpty()){
-                OperationOutcomeUtil.addLocationToIssue(context, issue, next.locationElement)
+            if(next is EvaluatedValidationMessage){
+                next.locationElements.forEach { OperationOutcomeUtil.addLocationToIssue(context, issue, it) }
             }
         }
 
@@ -60,7 +59,7 @@ class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<Eva
 
     class EvaluatedValidationMessage: SingleValidationMessage(){
 
-        var locationElement: String = ""
+        var locationElements: MutableList<String> = mutableListOf()
 
         override fun equals(other: Any?): Boolean {
             if (this === other) {
@@ -77,7 +76,7 @@ class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<Eva
             b.append(locationCol, otherObj.locationCol)
             b.append(locationLine, otherObj.locationLine)
             b.append(locationString, otherObj.locationString)
-            b.append(locationElement, otherObj.locationElement)
+            b.append(locationElements, otherObj.locationElements)
             b.append(message, otherObj.message)
             b.append(severity, otherObj.severity)
             return b.isEquals
@@ -88,9 +87,9 @@ class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<Eva
             b.append(locationCol)
             b.append(locationLine)
             b.append(locationString)
-            b.append(locationElement)
             b.append(message)
             b.append(severity)
+            locationElements.forEach { b.append(it) }
             return b.toHashCode()
         }
 
@@ -100,7 +99,7 @@ class EvaluatedValidationResult constructor(ctx: FhirContext, messages: List<Eva
                 b.append("col", locationCol)
                 b.append("row", locationLine)
             }
-            b.append("locationElement", locationElement)
+            b.append("locationElement", locationElements)
             if (locationString != null) {
                 b.append("locationString", locationString)
             }

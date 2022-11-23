@@ -33,9 +33,8 @@ class LocationFhirPathEvaluationInterceptor {
                     //Assumed to be suitable candidate for FHIR Path expression
                     val fhirPathExpr = validationMessage.locationString
                     val results = fhirPathEngine.evaluate(parsedResource, fhirPathExpr)
-                    if (results.isNotEmpty()){
-                        //We assume only one element to match the expression per issue
-                        val resource = when (val result = results[0]) {
+                    results.forEach { result ->
+                        val resource = when (result) {
                             is BaseResource -> result
                             is Type -> Container().apply{ setElement(result) }
                             else -> {
@@ -45,7 +44,7 @@ class LocationFhirPathEvaluationInterceptor {
                         }
                         if (resource != null) {
                             val encodedResource = parser.encodeResourceToString(resource as IBaseResource)
-                            evaluatedMessages[idx].locationElement = encodedResource
+                            evaluatedMessages[idx].locationElements.add(encodedResource)
                         }
                     }
                 } catch (e: Exception) {
