@@ -53,6 +53,7 @@ class LocationFhirPathEvaluationInterceptor {
                     evaluatedMessages[idx].apply {
                         locationCol = validationMessage.locationCol
                         locationLine = validationMessage.locationLine
+                        locationString = validationMessage.locationString
                         message = validationMessage.message
                         severity = validationMessage.severity
                     }
