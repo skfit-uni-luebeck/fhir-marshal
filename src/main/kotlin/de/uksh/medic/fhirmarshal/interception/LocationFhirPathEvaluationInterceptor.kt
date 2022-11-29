@@ -13,7 +13,7 @@ import org.hl7.fhir.r4.utils.FHIRPathEngine
 import java.lang.Exception
 
 @Interceptor
-class LocationFhirPathEvaluationInterceptor {
+class LocationFhirPathEvaluationInterceptor constructor(private val fhirPathTranslationFilters: List<Regex>) {
 
     companion object{
         //TODO: SimpleWorkerContext or HapiWorkerContext?
@@ -22,29 +22,40 @@ class LocationFhirPathEvaluationInterceptor {
         private val logger: Logger = LogManager.getLogger(this::class)
     }
 
+    private val predicate = fun(string: String): Boolean {
+        for(filter in fhirPathTranslationFilters) {
+            if (filter matches string) return true
+        }
+        return false
+    }
+
     @Hook(value = Pointcut.VALIDATION_COMPLETED)
     fun invoke(parsedResource: IBaseResource, rawResource: String?, validationResult: ValidationResult): EvaluatedValidationResult {
         val parser = validationResult.context.newJsonParser()
-        val evaluatedMessages = MutableList(validationResult.messages.size) { EvaluatedValidationResult.EvaluatedValidationMessage() }
+        //Filter validation messages
+        val messages = validationResult.messages
+        val evaluatedMessages = MutableList(messages.size) { EvaluatedValidationResult.EvaluatedValidationMessage() }
         if (parsedResource is Base) {
-            validationResult.messages.forEachIndexed { idx, validationMessage ->
+            messages.forEachIndexed { idx, validationMessage ->
                 //Try-Catch-Finally to avoid missing elements in new list due to exceptions occurring
                 try {
                     //Assumed to be suitable candidate for FHIR Path expression
                     val fhirPathExpr = validationMessage.locationString
-                    val results = fhirPathEngine.evaluate(parsedResource, fhirPathExpr)
-                    results.forEach { result ->
-                        val resource = when (result) {
-                            is BaseResource -> result
-                            is Type -> Container().apply{ setElement(result) }
-                            else -> {
-                                logger.warn("Couldn't parse result with type ${result.javaClass.simpleName} and path $fhirPathExpr")
-                                null
+                    if (predicate(fhirPathExpr)) {
+                        val results = fhirPathEngine.evaluate(parsedResource, fhirPathExpr)
+                        results.forEach { result ->
+                            val resource = when (result) {
+                                is BaseResource -> result
+                                is Type -> Container().apply{ setElement(result) }
+                                else -> {
+                                    logger.warn("Couldn't parse result with type ${result.javaClass.simpleName} and path $fhirPathExpr")
+                                    null
+                                }
                             }
-                        }
-                        if (resource != null) {
-                            val encodedResource = parser.encodeResourceToString(resource as IBaseResource)
-                            evaluatedMessages[idx].locationElements.add(encodedResource)
+                            if (resource != null) {
+                                val encodedResource = parser.encodeResourceToString(resource as IBaseResource)
+                                evaluatedMessages[idx].locationElements.add(encodedResource)
+                            }
                         }
                     }
                 } catch (e: Exception) {

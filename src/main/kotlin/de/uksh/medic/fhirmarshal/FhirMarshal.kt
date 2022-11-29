@@ -31,7 +31,13 @@ class FhirMarshal {
         val instanceValidator = FhirInstanceValidator(fhirContext)
         //Add interceptor service for evaluation fhir path expression in location elements of validation result
         val interceptorService = InterceptorService()
-        interceptorService.registerInterceptor(LocationFhirPathEvaluationInterceptor())
+        val filters = listOf(
+            //Filter for all messages concerning the code element
+            Regex("Bundle\\.entry\\[.*\\]\\.resource\\.ofType\\(Observation\\)\\.code.*"),
+            //Filter for all messages concerning the value element if it is of type Quantity
+            Regex("Bundle\\.entry\\[.*\\]\\.resource\\.ofType\\(Observation\\)\\.value\\.ofType\\(Quantity\\).*")
+            )
+        interceptorService.registerInterceptor(LocationFhirPathEvaluationInterceptor(filters))
         validator.setInterceptorBroadcaster(interceptorService)
         instanceValidator.validationSupport = validationSupportConfiguration.configureChain()
         //TODO: Check if concurrent bundle validation improves performance and whether (due to this option) disabled
