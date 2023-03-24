@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    val hapiVersion = "6.1.0"
+    val hapiVersion = "6.4.4"
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-batch")
     implementation("org.springframework.boot:spring-boot-starter-mail")
